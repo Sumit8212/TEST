@@ -80,7 +80,7 @@ contract StakingContract {
         emit RewardClaimed(msg.sender, reward);
     }
 
-    // CLAIM REWARD FUNCTION //
+    // Calculate REWARD FUNCTION //
 
     function calculateReward(address _staker) public view returns (uint256) {
         uint256 stakedTime = block.timestamp - lastStakedTime[_staker];
