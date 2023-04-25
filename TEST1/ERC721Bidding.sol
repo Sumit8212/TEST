@@ -44,8 +44,8 @@ contract Bidding{
 
    // SET ON BID FUNCTION ONLY OWNER//   
 
-    function setOnBid(address _owner, uint256 _tokenId)public onlyOwner{
-       highestBid[_tokenId]=1000;
+     function setOnBid(address _owner, uint256 _tokenId, uint256 price)public onlyOwner{
+       highestBid[_tokenId]=price;
        bidding[_owner][_tokenId];
     }
 
@@ -64,6 +64,7 @@ contract Bidding{
     function checkhighestBidder(uint256 tokenId)public view returns(address){
         return highestBidder[tokenId];
     }
+    
     // AUCTION ENNDED // 
     function EndAuction(uint256 tokenId)public onlyOwner{
         child.safeTransferFrom(child.ownerOf(tokenId),highestBidder[tokenId],tokenId); // transfer ownership of tokenId to highestBidder
