@@ -8,6 +8,8 @@ import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
 
+
+
 // STANDARD ERC20 TOKEN
 contract StandardToken is ERC20, ERC20Burnable, Ownable {
     constructor() ERC20("SumoToken", "ST") {
@@ -20,7 +22,6 @@ contract StandardToken is ERC20, ERC20Burnable, Ownable {
 }
 
 // REWARD ERC20 TOKEN
-
 contract RewardToken is ERC20, ERC20Burnable, Ownable {
     constructor() ERC20("RewardToken", "RWD") {
         _mint(msg.sender, 100 * 10 ** decimals());
@@ -29,25 +30,29 @@ contract RewardToken is ERC20, ERC20Burnable, Ownable {
     function mint(address to, uint256 amount) public onlyOwner {
         _mint(to, amount);
     }
+    receive() external payable {}
+    fallback() external payable {}
+
 }
+
 
 contract StakingContract {
     StandardToken public standardToken;
     RewardToken public rewardToken;
 
-    mapping(address => uint256) public stakedAmount;
-    mapping(address => uint256) public lastStakedTime;
+    mapping (address => uint256) public stakedAmount;
+    mapping (address => uint256) public lastStakedTime;
 
     event Staked(address indexed staker, uint256 amount);
     event Withdrawn(address indexed staker, uint256 amount);
     event RewardClaimed(address indexed staker, uint256 amount);
 
-    constructor(address _standardToken, address _rewardToken) {
+    constructor(address  _standardToken, address payable _rewardToken) {
         standardToken = StandardToken(_standardToken);
         rewardToken = RewardToken(_rewardToken);
     }
 
-    // PUT ON STAKE FUNCTION //
+                          // PUT ON STAKE FUNCTION //
     function stake(uint256 _amount) public {
         require(_amount > 0, "Invalid amount");
         standardToken.transferFrom(msg.sender, address(this), _amount);
@@ -56,40 +61,41 @@ contract StakingContract {
         emit Staked(msg.sender, _amount);
     }
 
-    // WITHDRAW FUNCTION //
+                    // WITHDRAW FUNCTION //
     function withdraw() public {
-        uint256 amount = stakedAmount[msg.sender];
-        require(amount > 0, "No stake found");
-        uint256 reward = calculateReward(msg.sender);
-        stakedAmount[msg.sender] = 0;
-        lastStakedTime[msg.sender] = 0;
-        if (reward > 0) {
-            rewardToken.transfer(msg.sender, reward);
-            emit RewardClaimed(msg.sender, reward);
-        }
-        standardToken.transfer(msg.sender, amount);
-        emit Withdrawn(msg.sender, amount);
-    }
-
-    // CLAIM REWARD FUNCTION //
-    function claimReward() public {
-        uint256 reward = calculateReward(msg.sender);
-        require(reward > 0, "No reward available");
-        lastStakedTime[msg.sender] = block.timestamp;
+    uint256 amount = stakedAmount[msg.sender];
+    require(amount > 0, "No stake found");
+    uint256 reward = calculateReward(msg.sender);
+    stakedAmount[msg.sender] = 0;
+    lastStakedTime[msg.sender] = 0;
+    if (reward > 0) {
         rewardToken.transfer(msg.sender, reward);
         emit RewardClaimed(msg.sender, reward);
     }
+    standardToken.transfer(msg.sender, amount);
+    emit Withdrawn(msg.sender, amount);
+}
 
-    // Calculate REWARD FUNCTION //
+                      // Check REWARD FUNCTION //
+function showReward() public returns(uint256 rewards) {
+    uint256 reward = calculateReward(msg.sender);
+    require(reward > 0, "No reward available");
+    // lastStakedTime[msg.sender] = block.timestamp;
+    // rewardToken.transfer(msg.sender, reward);
+    emit RewardClaimed(msg.sender, reward);
+    return  reward;
+}
 
-    function calculateReward(address _staker) public view returns (uint256) {
-        uint256 stakedTime = block.timestamp - lastStakedTime[_staker];
-        if (stakedTime < 10 seconds) {
-            return 0;
-        }
-        uint256 rewardRate = 5; // 5 reward token per minute
-        uint256 reward = (stakedAmount[_staker] * rewardRate * stakedTime) /
-            10 seconds;
-        return reward;
-    }
+                      // Calculate REWARD FUNCTION //
+
+function calculateReward(address _staker) public view returns (uint256) {
+    uint256 stakedTime = block.timestamp - lastStakedTime[_staker];
+    // if (stakedTime < 1 minutes) {
+    //     return 0;
+    // }
+    uint256 rewardRate = 5; // 5 reward token per minute
+    uint256 reward = stakedAmount[_staker] * rewardRate * stakedTime / 1 minutes;
+    return reward;
+}
+
 }
